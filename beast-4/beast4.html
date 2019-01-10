@@ -1,0 +1,151 @@
+<script src="simpletest.js"></script>
+<script>
+
+
+(function() {
+
+  var libraryStorage = {};
+  var incompleteLibrary = [];
+
+  function isInLibrary(dependency) {
+    return libraryStorage[dependency];
+  }
+
+  function librarySystem(libraryName, dependency, callback) {
+    if (arguments.length > 2) {
+      if (dependency.every(isInLibrary)) {
+        libraryStorage[libraryName] = callback.apply(null, dependency.map(function(element) {
+          return libraryStorage[element];
+        }));
+      } else {
+        incompleteLibrary.push([libraryName, dependency, callback]);
+      }
+    } else {
+      return libraryStorage[libraryName];
+    }
+
+    incompleteLibrary.forEach(function(element) {
+      if (!libraryStorage[element[0]] && element[1].every(isInLibrary)) {
+        librarySystem.apply(null, element);
+        incompleteLibrary.splice(element, 1);
+      }
+    });
+  }
+
+  window.librarySystem = librarySystem;
+
+}) ();
+
+tests({
+  'If callback, it should set library.': function() {
+    librarySystem('one', [], function() {
+      return '1';
+    });
+    var isLibrarySet = (librarySystem('one') !== undefined);
+    eq(isLibrarySet, true);
+  },
+  'If no callback, it should return library.': function() {
+    var test = librarySystem('one');
+    eq(test, '1');
+  },
+
+  'If callback and no dependencies, it should set a library without dependencies.': function() {
+    librarySystem('numbers', [], function() {
+      return 'I have no dependencies';
+    });
+
+    var test = librarySystem('numbers');
+    eq(test, 'I have no dependencies');
+  },
+  'If callback and one dependency, it should set a library with one dependency.': function() {
+    librarySystem('one', [], function() {
+      return '1';
+    });
+
+    librarySystem('numbers', ['one'], function(one) {
+      return 'I have ' + one + ' dependency';
+    });
+
+    var test = librarySystem('numbers');
+    eq(test, 'I have 1 dependency');
+  },
+  'If callback and n dependencies, it should set a library with n dependencies.': function() {
+    librarySystem('one', [], function() {
+      return '1';
+    });
+
+    librarySystem('two', [], function() {
+      return '2';
+    });
+
+    librarySystem('numbers', ['one', 'two'], function(one, two) {
+      return 'I don\'t have ' + one + ' dependency, I have ' + two;
+    });
+
+    var test = librarySystem('numbers');
+    eq(test, 'I don\'t have 1 dependency, I have 2');
+  },
+
+  'It should create a library after creating dependencies.': function() {
+    librarySystem('fruit', [], function() {
+      return 'mango';
+    });
+
+    librarySystem('vegetable', [], function() {
+      return 'cucumber';
+    });
+
+    librarySystem('produce', ['fruit', 'vegetable'], function(fruit, vegetable) {
+      return 'I bought a ' + fruit + ' and a ' + vegetable;
+    });
+
+    var test = librarySystem('produce');
+    eq(test, 'I bought a mango and a cucumber');
+  },
+  'It should create a library between creating dependencies.': function() {
+    librarySystem('meat', [], function() {
+      return 'beef';
+    });
+
+    librarySystem('protein', ['meat', 'poultry'], function(meat, poultry) {
+      return 'Is ' + meat + ' tastier than ' + poultry + '?';
+    });
+
+    librarySystem('poultry', [], function() {
+      return 'chicken';
+    });
+
+    var test = librarySystem('protein');
+    eq(test, 'Is beef tastier than chicken?');
+  },
+  'It should create a library before creating dependencies.': function() {
+    librarySystem('workBlurb', ['name', 'company'], function(name, company) {
+      return name + ' works at ' + company;
+    });
+
+    librarySystem('name', [], function() {
+      return 'Gordon';
+    });
+
+    librarySystem('company', [], function() {
+      return 'Watch and Code';
+    });
+
+    var test = librarySystem('workBlurb');
+    eq(test, 'Gordon works at Watch and Code')
+  },
+
+  'It should run callback only once for each library.': function() {
+    var numberOfTimesCallbackHasRun = 0;
+    librarySystem('color', [], function() {
+      numberOfTimesCallbackHasRun++;
+      return 'blue';
+    });
+
+    librarySystem('color');
+    librarySystem('color');
+    eq(numberOfTimesCallbackHasRun, 1);
+  }
+});
+
+</script>
