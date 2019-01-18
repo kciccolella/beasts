@@ -1,0 +1,144 @@
+<script src="simpletest.js"></script>
+<script>
+
+function toFixed(value, precision) {
+  if (typeof value !== 'number') {
+    throw new TypeError('toFixed is not a function');
+  }
+
+  if (precision === undefined) {
+    precision = 0;
+  } else if(precision < 0 || precision > 100) {
+    throw new RangeError('toFixed() precision argument must be between 0 and 100');
+  }
+
+  var resultSoFar = value;
+  var valueSplit = value.toString().split('.');
+
+  if(valueSplit.length > 1) {
+    if (precision) {
+      if (valueSplit[1].length > precision) {
+        var slice1 = valueSplit[1].slice(0, precision);
+        var slice2 = valueSplit[1].slice(precision);
+        resultSoFar = Math.round(valueSplit[0].concat(slice1, '.', slice2)).toString().padStart(precision, '0');
+        slice1 = Number(resultSoFar.slice(0, -precision) || resultSoFar.slice(0, -precision).padEnd(precision, '0')).toString();
+        slice2 = resultSoFar.slice(-precision);
+        resultSoFar = slice1.concat('.', slice2);
+      } else {
+        valueSplit[1] = valueSplit[1].padEnd(precision, '0');
+        return valueSplit[0].concat('.', valueSplit[1]);
+      }
+    } else {
+      resultSoFar = Math.round(value).toString();
+    }
+  } else {
+    if(precision) {
+      return resultSoFar = valueSplit[0].concat('.').padEnd(valueSplit[0].length + precision + 1, '0');
+    } else {
+      return resultSoFar = valueSplit[0];
+    }
+  }
+
+  return resultSoFar;
+}
+
+tests({
+  '01. It should return a string.': function () {
+    var test = 1;
+    var isString = typeof toFixed(test) === 'string';
+
+    eq(isString, true);
+  },
+  '02. It should return the given value using fixed point notation.': function () {
+    var test = 3/3;
+    var testToFixed = toFixed(test);
+
+    eq(testToFixed, '1');
+  },
+
+  '03. If no precision, it should default to 0.': function () {
+    var test = 1.0;
+    var testToFixed = toFixed(test);
+
+    eq(testToFixed, '1');
+  },
+  '04. If precision, it should return the given value with exact amount of digits after the decimal place.': function () {
+    var test = 1;
+    var testToFixed = toFixed(test, 3);
+
+    eq(testToFixed, '1.000');
+  },
+  '05. It should accept a precision between 0 and 100.': function () {
+    var test = 1;
+    var testToFixed = toFixed(test, 15);
+
+    eq(testToFixed, '1.000000000000000');
+  },
+
+  '06. If precision < 0, it should throw a RangeError.': function () {
+    var isRangeError = false;
+    var test = 1;
+    
+    try{
+      toFixed(test, -1);
+    } catch(e) {
+      isRangeError = (e instanceof RangeError);
+    }
+
+    eq(isRangeError, true);
+  },
+  '07. If precision > 100, it should throw a RangeError.': function () {
+    var isRangeError = false;
+    var test = 1;
+    
+    try{
+      toFixed(test, 101);
+    } catch(e) {
+      isRangeError = (e instanceof RangeError);
+    }
+
+    eq(isRangeError, true);
+  },
+  '08. If typeof value !== "number", it should throw a TypeError.': function () {
+    var isTypeError = false;
+    
+    try{
+      toFixed('1');
+    } catch(e) {
+      isTypeError = (e instanceof TypeError);
+    }
+
+    eq(isTypeError, true);
+  },
+
+  '09. If value has fractions, it should round value.': function () {
+    var test = 5/3;
+    var testToFixed = toFixed(test, 2);
+
+    eq(testToFixed, '1.67');
+  },
+  '10. It should add zeros to match the specified precision.': function () {
+    var test = 1;
+    var testToFixed = toFixed(test, 15);
+
+    eq(testToFixed, '1.000000000000000');
+  },
+  '11. If value >= 1e+21, it should return a string in exponential notation.': function () {
+    var test = 1e+21;
+    var testToFixed = toFixed(test);
+
+    eq(testToFixed, '1e+21');
+  },
+
+  '12. It should pass beast#6 tests': function() {
+    var test1 = toFixed(0.615, 2);
+    var test2 = toFixed(10.235, 2);
+    var test3 = toFixed(1.005, 2);
+
+    eq(test1, 0.62);
+    eq(test2, 10.24);
+    eq(test3, 1.01);
+  }
+})
+
+</script>
