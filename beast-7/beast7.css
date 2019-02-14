@@ -1,0 +1,18 @@
+ul {
+	list-style-type: none;
+}
+
+li input {
+  border: none;
+  background-color: transparent;
+}
+
+.delete {
+	/*background-color: rgba(220, 0, 0, 1);*/
+	background-color: gray;
+	border-radius: 100%;
+}
+
+.marked {
+    text-decoration: line-through;
+}
